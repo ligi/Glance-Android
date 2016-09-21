@@ -18,12 +18,12 @@ public class ReaderSectionAdapter extends FragmentPagerAdapter {
     public static enum Feed {
         POPULAR     ("Most Popular"),
         RECENT      ("Recent"),
-        NEWS        ("News",       "https://1yae9gfwab.execute-api.us-east-1.amazonaws.com/dev/40805955111ac2e85631facfb362f067"),
-        COMMENTARY  ("Commentary", "https://1yae9gfwab.execute-api.us-east-1.amazonaws.com/dev/dc1a399c275cbc0bcf6329c8419d6f4f"),
-        FICTION     ("Fiction",    "https://1yae9gfwab.execute-api.us-east-1.amazonaws.com/dev/ee8d2db2513114660b054cd82da29b69"),
-        HN          ("HN",         "https://1yae9gfwab.execute-api.us-east-1.amazonaws.com/dev/af38f38c0a21785ef8409d48ab4c1246"),
-        TRUE_REDDIT ("True Reddit","https://1yae9gfwab.execute-api.us-east-1.amazonaws.com/dev/792a6a5fc2c23eafe6a80855263ac259"),
-        DIGG        ("Digg",       "https://1yae9gfwab.execute-api.us-east-1.amazonaws.com/dev/8ef995083e5fe68ae3fe2d3d95f71844");
+        NEWS        ("News",       "https://glance.zappa.io/40805955111ac2e85631facfb362f067"),
+        COMMENTARY  ("Commentary", "https://glance.zappa.io/dc1a399c275cbc0bcf6329c8419d6f4f"),
+        FICTION     ("Fiction",    "https://glance.zappa.io/ee8d2db2513114660b054cd82da29b69"),
+        HN          ("HN",         "https://glance.zappa.io/af38f38c0a21785ef8409d48ab4c1246"),
+        TRUE_REDDIT ("True Reddit","https://glance.zappa.io/792a6a5fc2c23eafe6a80855263ac259"),
+        DIGG        ("Digg",       "https://glance.zappa.io/8ef995083e5fe68ae3fe2d3d95f71844");
 
         private final String mTitle;
         private final String mFeedUrl;
