@@ -1,5 +1,6 @@
 package pro.dbro.glance.fragments;
 
+import android.net.Uri;
 import android.os.Bundle;
 import android.support.v4.app.ListFragment;
 import android.view.LayoutInflater;
@@ -8,19 +9,27 @@ import android.view.ViewGroup;
 import android.widget.ArrayAdapter;
 import android.widget.ListView;
 import android.widget.TextView;
-
 import com.google.gson.JsonArray;
 import com.google.gson.JsonObject;
+import com.google.gson.JsonParser;
+import com.google.gson.stream.JsonReader;
 import com.koushikdutta.async.future.Future;
-import com.koushikdutta.async.future.FutureCallback;
+import com.koushikdutta.async.http.AsyncHttpRequest;
+import com.koushikdutta.async.http.libcore.RawHeaders;
 import com.koushikdutta.ion.Ion;
+import com.koushikdutta.ion.loader.AsyncHttpRequestFactory;
 import com.parse.Parse;
 import com.parse.ParseObject;
 import com.parse.ParseQueryAdapter;
-
+import java.io.IOException;
+import java.io.StringReader;
 import java.net.MalformedURLException;
 import java.net.URL;
-
+import okhttp3.Call;
+import okhttp3.Callback;
+import okhttp3.OkHttpClient;
+import okhttp3.Request;
+import okhttp3.Response;
 import pro.dbro.glance.R;
 import pro.dbro.glance.adapters.AdapterUtils;
 import pro.dbro.glance.adapters.ArticleAdapter;
@@ -138,49 +147,60 @@ public class FeedFragment extends ListFragment {
 
     private void loadPipe(String url) {
         // don't attempt to load more if a load is already in progress
-        if (mFuture != null && !mFuture.isDone() && !mFuture.isCancelled())
-            return;
+        if (mFuture != null && !mFuture.isDone() && !mFuture.isCancelled()) return;
 
         mLoading = true;
+        final AsyncHttpRequestFactory current = Ion.getDefault(getActivity()).configure().getAsyncHttpRequestFactory();
+        Ion.getDefault(getActivity()).configure().setAsyncHttpRequestFactory(new AsyncHttpRequestFactory() {
+            @Override
+            public AsyncHttpRequest createAsyncHttpRequest(final Uri uri, final String method, final RawHeaders headers) {
+                final AsyncHttpRequest request = current.createAsyncHttpRequest(uri, method, headers);
+                request.setTimeout(10000);
+                return request;
+            }
 
-        // This request loads a URL as JsonArray and invokes
-        // a callback on completion.
-        mFuture = Ion.with(getActivity(), url)
-                .asJsonObject()
-                .setCallback(new FutureCallback<JsonObject>() {
+        });
+
+        final OkHttpClient build = new OkHttpClient.Builder().build();
+        build.newCall(new Request.Builder().url(url).build()).enqueue(new Callback() {
+            @Override
+            public void onFailure(final Call call, final IOException e) {
+                getActivity().runOnUiThread(new Runnable() {
                     @Override
-                    public void onCompleted(Exception e, JsonObject result) {
-                        mLoading = false;
+                    public void run() {
+                        showError();
+                    }
+                });
+            }
 
-                        // this is called back onto the ui thread, no Activity.runOnUiThread or Handler.post necessary.
-                        if (e != null) {
+            @Override
+            public void onResponse(final Call call, final Response response) throws IOException {
+
+                JsonReader reader = new JsonReader(new StringReader(response.body().string()));
+                reader.setLenient(true);
+                final JsonParser parser = new JsonParser();
+
+                final JsonArray results = parser.parse(reader).getAsJsonArray();
+
+                if (results.size() == 0) {
+                    getActivity().runOnUiThread(new Runnable() {
+                        @Override
+                        public void run() {
                             showError();
-                            e.printStackTrace();
-                            return;
                         }
-
-                        JsonObject value = result.getAsJsonObject("value");
-                        JsonArray results = value.getAsJsonArray("items");
-
-                        if (results.size() == 0) {
-                            showError();
-                            return;
-                        }
-
+                    });
+                    return;
+                }
+                getActivity().runOnUiThread(new Runnable() {
+                    @Override
+                    public void run() {
                         for (int i = 0; i < results.size(); i++) {
                             mFeedItemAdapter.add(results.get(i).getAsJsonObject());
                         }
                     }
                 });
-
-        // Replace network fetch code with this to simulate network error
-//        mLoadingView.postDelayed(new Runnable() {
-//            @Override
-//            public void run() {
-//                mLoading = false;
-//                showError();
-//            }
-//        }, 6000);
+            }
+        });
     }
 
     private void showError() {
